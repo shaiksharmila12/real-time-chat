@@ -1,45 +1,59 @@
 const express = require("express");
 const http = require("http");
-const cors = require("cors");
-const mongoose = require("mongoose");
-const dotenv = require("dotenv");
 const { Server } = require("socket.io");
-
-const setupSocket = require("./socket");
-const authRoutes = require("./routes/auth");
-
-dotenv.config();
+const cors = require("cors");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use("/api/auth", authRoutes);
-
-app.get("/", (req, res) => {
-  res.send("Backend is running 🚀");
-});
-
 const server = http.createServer(app);
-
 const io = new Server(server, {
   cors: {
-    origin: "*",
-  },
+    origin: "*"
+  }
 });
 
-setupSocket(io);
+let users = [];
+
+// LOGIN
+app.post("/login", (req, res) => {
+  const { username, password } = req.body;
+
+  const user = users.find(u => u.username === username && u.password === password);
+
+  if (user) {
+    res.json({ success: true });
+  } else {
+    res.json({ success: false });
+  }
+});
+
+// REGISTER
+app.post("/register", (req, res) => {
+  const { username, password } = req.body;
+
+  users.push({ username, password });
+
+  res.json({ success: true });
+});
+
+// SOCKET
+io.on("connection", (socket) => {
+
+  socket.on("joinRoom", (room) => {
+    socket.join(room);
+  });
+
+  socket.on("sendMessage", (data) => {
+    io.to(data.room).emit("receiveMessage", data);
+  });
+
+  socket.on("typing", (room) => {
+    socket.to(room).emit("typing");
+  });
+
+});
 
 const PORT = process.env.PORT || 5000;
-
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("MongoDB connected successfully");
-    server.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  })
-  .catch((error) => {
-    console.error("MongoDB connection failed:", error.message);
-  });
+server.listen(PORT, () => console.log("Server running"));

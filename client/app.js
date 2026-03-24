@@ -1,59 +1,63 @@
-const API = "http://localhost:5000/api/auth";
+const API = "https://real-time-chat-444b.onrender.com/"; // change this
 
-function register() {
-  const username = document.getElementById("username").value.trim();
-  const password = document.getElementById("password").value.trim();
+// LOGIN
+async function login() {
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
 
-  if (!username || !password) {
-    alert("Please enter username and password");
-    return;
-  }
-
-  fetch(`${API}/register`, {
+  const res = await fetch(`${API}/login`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ username, password }),
-  })
-    .then(async (res) => {
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-      alert(data.message);
-      window.location.href = "login.html";
-    })
-    .catch((err) => {
-      alert(err.message);
-    });
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ username, password })
+  });
+
+  const data = await res.json();
+
+  if (data.success) {
+    localStorage.setItem("username", username);
+    window.location.href = "/";
+  } else {
+    alert("Login failed");
+  }
 }
 
-function login() {
-  const username = document.getElementById("username").value.trim();
-  const password = document.getElementById("password").value.trim();
+// REGISTER
+async function register() {
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
 
-  if (!username || !password) {
-    alert("Please enter username and password");
-    return;
-  }
-
-  fetch(`${API}/login`, {
+  await fetch(`${API}/register`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ username, password }),
-  })
-    .then(async (res) => {
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ username, password })
+  });
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("username", data.user.username);
-
-      alert(data.message);
-      window.location.href = "index.html";
-    })
-    .catch((err) => {
-      alert(err.message);
-    });
+  alert("Registered!");
+  window.location.href = "/login.html";
 }
+
+// SOCKET
+const socket = io(API);
+const room = "general";
+const sender = localStorage.getItem("username") || "User";
+
+socket.emit("joinRoom", room);
+
+function sendMessage() {
+  const message = document.getElementById("msg").value.trim();
+
+  if (!message) return;
+
+  socket.emit("sendMessage", {
+    sender,
+    content: message,
+    room
+  });
+
+  document.getElementById("msg").value = "";
+}
+
+socket.on("receiveMessage", (data) => {
+  document.getElementById("messages").innerHTML +=
+    `<div><b>${data.sender}:</b> ${data.content}</div>`;
+});
