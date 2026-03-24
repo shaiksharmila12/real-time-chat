@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body class="bg-gray-100 flex justify-center items-center h-screen">
+
+<div class="bg-white p-6 rounded shadow w-96">
+  <h2 class="text-xl mb-4">Chat Room</h2>
+
+  <div id="messages" class="h-48 overflow-y-auto border p-2 mb-2"></div>
+
+  <div id="typing" class="text-sm text-gray-400"></div>
+
+  <input id="msg" class="border p-2 w-full mb-2" placeholder="Type message" />
+  <button onclick="sendMessage()" class="bg-blue-500 text-white px-4 py-2 w-full rounded">
+    Send
+  </button>
+</div>
+
+<script>
+const socket = io("http://localhost:5000");
+const room = "general";
+const sender = localStorage.getItem("username") || "User";
+
+socket.emit("joinRoom", room);
+
+function sendMessage() {
+  const message = document.getElementById("msg").value.trim();
+
+  if (!message) return;
+
+  socket.emit("sendMessage", {
+    sender: sender,
+    content: message,
+    room: room
+  });
+
+  document.getElementById("msg").value = "";
+}
+
+socket.on("receiveMessage", (data) => {
+  document.getElementById("messages").innerHTML +=
+    `<div class="mb-1"><b>${data.sender}:</b> ${data.content}</div>`;
+});
+
+document.getElementById("msg").addEventListener("input", () => {
+  socket.emit("typing", room);
+});
+
+socket.on("typing", () => {
+  document.getElementById("typing").innerText = "Someone is typing...";
+  setTimeout(() => {
+    document.getElementById("typing").innerText = "";
+  }, 1000);
+});
+</script>
+
+</body>
+</html>
