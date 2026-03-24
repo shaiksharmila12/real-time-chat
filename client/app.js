@@ -1,4 +1,4 @@
-const API = "https://your-backend.onrender.com"; // <-- ikkada nee Render backend URL pettu
+const API = "https://real-time-chat-444b.onrender.com"; // <-- ikkada nee Render backend URL pettu
 
 function showAlert(message) {
   alert(message);
