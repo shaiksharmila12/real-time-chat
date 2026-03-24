@@ -35,7 +35,7 @@ async function login() {
 
     if (data.success) {
       localStorage.setItem("username", username);
-      window.location.href = "/";
+      window.location.href = "/index.html";
     } else {
       showAlert("Invalid username or password");
     }
@@ -97,6 +97,13 @@ if (msgInput && messagesBox) {
     }
 
     socket = io(API);
+    socket.on("connect", () => {
+  console.log("Connected to socket server");
+});
+
+socket.on("connect_error", (err) => {
+  console.log("Socket error:", err.message);
+});
     const room = "general";
 
     socket.emit("joinRoom", room);
@@ -142,12 +149,14 @@ if (msgInput && messagesBox) {
       socket.emit("typing", room);
     });
 
-    socket.on("typing", () => {
-      typingBox.innerText = "Someone is typing...";
-      setTimeout(() => {
-        typingBox.innerText = "";
-      }, 1000);
-    });
+   socket.on("typing", () => {
+  if (typingBox) {
+    typingBox.innerText = "Someone is typing...";
+    setTimeout(() => {
+      typingBox.innerText = "";
+    }, 1000);
+  }
+});
 
     msgInput.addEventListener("keypress", (e) => {
       if (e.key === "Enter") {
