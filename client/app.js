@@ -1,4 +1,4 @@
-const API = "https://real-time-chat-444b.onrender.com"; // <-- ikkada nee Render backend URL pettu
+const API = "https://real-time-chat-444b.onrender.com";
 
 function showAlert(message) {
   alert(message);
@@ -96,67 +96,16 @@ if (msgInput && messagesBox) {
       currentUser.innerText = sender;
     }
 
-    socket = io(API);
-    socket.on("connect", () => {
-  console.log("Connected to socket server");
-});
-
-socket.on("connect_error", (err) => {
-  console.log("Socket error:", err.message);
-});
+    // TEMPORARY TEST: socket code fully disabled
     const room = "general";
-
-    socket.emit("joinRoom", room);
 
     window.sendMessage = function () {
       const message = msgInput.value.trim();
-
       if (!message) return;
 
-      socket.emit("sendMessage", {
-        sender,
-        content: message,
-        room
-      });
-
+      // For testing only, do not send to backend
       msgInput.value = "";
     };
-
-    socket.on("receiveMessage", (data) => {
-      const isMine = data.sender === sender;
-
-      const wrapper = document.createElement("div");
-      wrapper.className = `flex ${isMine ? "justify-end" : "justify-start"}`;
-
-      const bubble = document.createElement("div");
-      bubble.className = isMine
-        ? "max-w-[75%] bg-gradient-to-r from-cyan-500 to-indigo-500 text-white rounded-2xl rounded-br-md px-4 py-3 shadow-lg"
-        : "max-w-[75%] bg-white/10 text-white border border-white/10 rounded-2xl rounded-bl-md px-4 py-3 shadow";
-
-      bubble.innerHTML = `
-        <div class="text-xs mb-1 ${isMine ? "text-cyan-100" : "text-slate-300"} font-semibold">
-          ${data.sender}
-        </div>
-        <div class="break-words">${data.content}</div>
-      `;
-
-      wrapper.appendChild(bubble);
-      messagesBox.appendChild(wrapper);
-      messagesBox.scrollTop = messagesBox.scrollHeight;
-    });
-
-    msgInput.addEventListener("input", () => {
-      socket.emit("typing", room);
-    });
-
-   socket.on("typing", () => {
-  if (typingBox) {
-    typingBox.innerText = "Someone is typing...";
-    setTimeout(() => {
-      typingBox.innerText = "";
-    }, 1000);
-  }
-});
 
     msgInput.addEventListener("keypress", (e) => {
       if (e.key === "Enter") {
