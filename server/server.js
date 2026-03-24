@@ -8,19 +8,41 @@ app.use(cors());
 app.use(express.json());
 
 const server = http.createServer(app);
+
 const io = new Server(server, {
   cors: {
-    origin: "*"
+    origin: "*",
+    methods: ["GET", "POST"]
   }
 });
 
 let users = [];
 
-// LOGIN
+// test route
+app.get("/", (req, res) => {
+  res.send("Backend is running");
+});
+
+// register
+app.post("/register", (req, res) => {
+  const { username, password } = req.body;
+
+  const existingUser = users.find((u) => u.username === username);
+  if (existingUser) {
+    return res.json({ success: false, message: "User already exists" });
+  }
+
+  users.push({ username, password });
+  res.json({ success: true });
+});
+
+// login
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
 
-  const user = users.find(u => u.username === username && u.password === password);
+  const user = users.find(
+    (u) => u.username === username && u.password === password
+  );
 
   if (user) {
     res.json({ success: true });
@@ -29,18 +51,7 @@ app.post("/login", (req, res) => {
   }
 });
 
-// REGISTER
-app.post("/register", (req, res) => {
-  const { username, password } = req.body;
-
-  users.push({ username, password });
-
-  res.json({ success: true });
-});
-
-// SOCKET
 io.on("connection", (socket) => {
-
   socket.on("joinRoom", (room) => {
     socket.join(room);
   });
@@ -52,8 +63,9 @@ io.on("connection", (socket) => {
   socket.on("typing", (room) => {
     socket.to(room).emit("typing");
   });
-
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log("Server running"));
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

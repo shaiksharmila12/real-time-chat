@@ -1,7 +1,12 @@
-const API = "https://real-time-chat-444b.onrender.com/"; // change this to your Render backend URL
+const API = "https://your-backend.onrender.com"; // <-- ikkada nee Render backend URL pettu
 
 function showAlert(message) {
   alert(message);
+}
+
+function logout() {
+  localStorage.removeItem("username");
+  window.location.href = "/login.html";
 }
 
 // LOGIN
@@ -74,7 +79,7 @@ async function register() {
   }
 }
 
-// CHAT PAGE ONLY
+// CHAT PAGE
 let socket;
 const msgInput = document.getElementById("msg");
 const messagesBox = document.getElementById("messages");
@@ -82,54 +87,72 @@ const typingBox = document.getElementById("typing");
 const currentUser = document.getElementById("currentUser");
 
 if (msgInput && messagesBox) {
-  socket = io(API);
-  const room = "general";
-  const sender = localStorage.getItem("username") || "Guest";
+  const sender = localStorage.getItem("username");
 
-  if (currentUser) {
-    currentUser.innerText = sender;
-  }
+  if (!sender) {
+    window.location.href = "/login.html";
+  } else {
+    if (currentUser) {
+      currentUser.innerText = sender;
+    }
 
-  socket.emit("joinRoom", room);
+    socket = io(API);
+    const room = "general";
 
-  window.sendMessage = function () {
-    const message = msgInput.value.trim();
+    socket.emit("joinRoom", room);
 
-    if (!message) return;
+    window.sendMessage = function () {
+      const message = msgInput.value.trim();
 
-    socket.emit("sendMessage", {
-      sender,
-      content: message,
-      room
+      if (!message) return;
+
+      socket.emit("sendMessage", {
+        sender,
+        content: message,
+        room
+      });
+
+      msgInput.value = "";
+    };
+
+    socket.on("receiveMessage", (data) => {
+      const isMine = data.sender === sender;
+
+      const wrapper = document.createElement("div");
+      wrapper.className = `flex ${isMine ? "justify-end" : "justify-start"}`;
+
+      const bubble = document.createElement("div");
+      bubble.className = isMine
+        ? "max-w-[75%] bg-gradient-to-r from-cyan-500 to-indigo-500 text-white rounded-2xl rounded-br-md px-4 py-3 shadow-lg"
+        : "max-w-[75%] bg-white/10 text-white border border-white/10 rounded-2xl rounded-bl-md px-4 py-3 shadow";
+
+      bubble.innerHTML = `
+        <div class="text-xs mb-1 ${isMine ? "text-cyan-100" : "text-slate-300"} font-semibold">
+          ${data.sender}
+        </div>
+        <div class="break-words">${data.content}</div>
+      `;
+
+      wrapper.appendChild(bubble);
+      messagesBox.appendChild(wrapper);
+      messagesBox.scrollTop = messagesBox.scrollHeight;
     });
 
-    msgInput.value = "";
-  };
+    msgInput.addEventListener("input", () => {
+      socket.emit("typing", room);
+    });
 
-  socket.on("receiveMessage", (data) => {
-    messagesBox.innerHTML += `
-      <div class="bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm">
-        <span class="font-semibold text-indigo-600">${data.sender}:</span>
-        <span class="text-gray-700">${data.content}</span>
-      </div>
-    `;
-    messagesBox.scrollTop = messagesBox.scrollHeight;
-  });
+    socket.on("typing", () => {
+      typingBox.innerText = "Someone is typing...";
+      setTimeout(() => {
+        typingBox.innerText = "";
+      }, 1000);
+    });
 
-  msgInput.addEventListener("input", () => {
-    socket.emit("typing", room);
-  });
-
-  socket.on("typing", () => {
-    typingBox.innerText = "Someone is typing...";
-    setTimeout(() => {
-      typingBox.innerText = "";
-    }, 1000);
-  });
-
-  msgInput.addEventListener("keypress", (e) => {
-    if (e.key === "Enter") {
-      sendMessage();
-    }
-  });
-}https://real-time-chat-444b.onrender.com/
+    msgInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        sendMessage();
+      }
+    });
+  }
+}
